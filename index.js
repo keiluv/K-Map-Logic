@@ -38,25 +38,33 @@ function convertBinaryStrToBoolArr(binaryStr) {
   return binaryStr.split('').map(x => x === '1');
 }
 
-function generateNeighborTerms(minterm, fixedIndicies) {
-  const numOfFreeTerms = minterm.terms.length - fixedIndicies.length;
+function xorBoolArrays(arr1, arr2) {
+  const outputLength = Math.min(arr1.length, arr2.length);
+  const outputArr = [];
+  for (let i = 0; i < outputLength; i++) {
+    outputArr.push(( arr1[i] && !arr2[i] ) || ( !arr1[i] && arr2[i] ));
+  }
+  return outputArr;
+}
+
+function generateNeighborTerms(minterm, fixedIndicies = []) {
+  filteredFixedIndicies = fixedIndicies.filter(x => x >= 0 && x < minterm.terms.length);
+  filteredFixedIndicies.sort();
+
+  const numOfFreeTerms = minterm.terms.length - filteredFixedIndicies.length;
+  if (numOfFreeTerms < 0) return [];
+
   const numOfNeighbors = Math.pow(2, numOfFreeTerms) - 1;
-  fixedIndicies.sort((a, b) => a > b);
-console.log(fixedIndicies)
   const permutationMasks = range(numOfNeighbors)
     .map(num => convertToBinaryString(num + 1, numOfFreeTerms))
     .map(binaryNumStr => {
-      console.log(binaryNumStr)
       let maskStr = binaryNumStr;
-      fixedIndicies.forEach(index => {
-        console.log('maskStr:', maskStr);
-        maskStr = insertIntoString(maskStr, index, '0');
-      });
-      console.log('maskStr:', maskStr);
+      filteredFixedIndicies.forEach(index => maskStr = insertIntoString(maskStr, index, '0'));
       return maskStr;
     })
     .map(convertBinaryStrToBoolArr);
-  console.dir(permutationMasks, {depth: 100});
+  const neighbors = permutationMasks.map(mask => xorBoolArrays(mask, minterm.terms));
+  return neighbors;
 }
 
-generateNeighborTerms(new Minterm('1010'), [2])
+console.log(generateNeighborTerms(new Minterm('0000'), [1, 2]));

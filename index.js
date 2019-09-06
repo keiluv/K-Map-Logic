@@ -1,26 +1,4 @@
-class Minterm {
-  constructor(minterm = '') {
-    this.terms = convertBinaryStrToBoolArr(minterm);
-  }
-
-  getTerm(index) {
-    if (index < 0 || index >= this.terms.length) {
-      return null;
-    }
-    return this.terms[index];
-  }
-}
-
-class MintermList {
-  constructor(numOfVariables = 1, baseTenMinterms = [0]) {
-    let mintermStrings = baseTenMinterms
-      .map(term => convertToBinaryString(term, numOfVariables))
-      .filter(term => term.length <= numOfVariables);
-    this.minterms = mintermStrings.map(term => new Minterm(term));
-  }
-}
-
-console.dir(new MintermList(2, [1, 2, 3, 4]), {depth: 100});
+'use strict';
 
 function insertIntoString(string, index, text) {
   return string.slice(0, index) + text + string.slice(index);
@@ -47,24 +25,55 @@ function xorBoolArrays(arr1, arr2) {
   return outputArr;
 }
 
-function generateNeighborTerms(minterm, fixedIndicies = []) {
-  filteredFixedIndicies = fixedIndicies.filter(x => x >= 0 && x < minterm.terms.length);
-  filteredFixedIndicies.sort();
-
-  const numOfFreeTerms = minterm.terms.length - filteredFixedIndicies.length;
-  if (numOfFreeTerms < 0) return [];
-
+function generateMasks(numOfFreeTerms, fixedIndicies = []) {
   const numOfNeighbors = Math.pow(2, numOfFreeTerms) - 1;
-  const permutationMasks = range(numOfNeighbors)
+  const masks = range(numOfNeighbors)
     .map(num => convertToBinaryString(num + 1, numOfFreeTerms))
     .map(binaryNumStr => {
       let maskStr = binaryNumStr;
-      filteredFixedIndicies.forEach(index => maskStr = insertIntoString(maskStr, index, '0'));
+      fixedIndicies.forEach(index => maskStr = insertIntoString(maskStr, index, '0'));
       return maskStr;
     })
     .map(convertBinaryStrToBoolArr);
-  const neighbors = permutationMasks.map(mask => xorBoolArrays(mask, minterm.terms));
-  return neighbors;
+  return masks;
 }
 
-console.log(generateNeighborTerms(new Minterm('0000'), [1, 2]));
+
+class Minterm {
+  constructor(minterm = '') {
+    this.terms = convertBinaryStrToBoolArr(minterm);
+  }
+
+  getTerm(index) {
+    if (index < 0 || index >= this.terms.length) {
+      return null;
+    }
+    return this.terms[index];
+  }
+
+  generateNeighborTerms(fixedIndicies = []) {
+    const filteredFixedIndicies = fixedIndicies.filter(x => x >= 0 && x < this.terms.length);
+    filteredFixedIndicies.sort();
+  
+    const numOfFreeTerms = this.terms.length - filteredFixedIndicies.length;
+    if (numOfFreeTerms < 0) return [];
+
+    const permutationMasks = generateMasks(numOfFreeTerms, filteredFixedIndicies);
+    const neighbors = permutationMasks.map(mask => xorBoolArrays(mask, this.terms));
+    return neighbors;
+  }
+}
+
+
+class MintermList {
+  constructor(numOfVariables = 1, baseTenMinterms = [0]) {
+    let mintermStrings = baseTenMinterms
+      .map(term => convertToBinaryString(term, numOfVariables))
+      .filter(term => term.length <= numOfVariables);
+    this.minterms = mintermStrings.map(term => new Minterm(term));
+  }
+}
+
+
+
+console.log(new Minterm('0000').generateNeighborTerms( [0, 2, 3]));

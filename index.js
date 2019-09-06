@@ -25,10 +25,10 @@ function xorBoolArrays(arr1, arr2) {
   return outputArr;
 }
 
-function generateMasks(numOfFreeTerms, fixedIndicies = []) {
-  const numOfNeighbors = Math.pow(2, numOfFreeTerms) - 1;
+function generateMasks(numOfTerms, fixedIndicies = []) {
+  const numOfNeighbors = Math.pow(2, numOfTerms) - 1;
   const masks = range(numOfNeighbors)
-    .map(num => convertToBinaryString(num + 1, numOfFreeTerms))
+    .map(num => convertToBinaryString(num + 1, numOfTerms))
     .map(binaryNumStr => {
       let maskStr = binaryNumStr;
       fixedIndicies.forEach(index => maskStr = insertIntoString(maskStr, index, '0'));
@@ -42,6 +42,7 @@ function generateMasks(numOfFreeTerms, fixedIndicies = []) {
 class Minterm {
   constructor(minterm = '') {
     this.terms = convertBinaryStrToBoolArr(minterm);
+    this.isClaimed = false;
   }
 
   getTerm(index) {
@@ -72,8 +73,28 @@ class MintermList {
       .filter(term => term.length <= numOfVariables);
     this.minterms = mintermStrings.map(term => new Minterm(term));
   }
+
+  generateGroups() {
+    const mintermQueue = [...this.minterms];
+    while (mintermQueue.length > 0) {
+      const front = mintermQueue.shift();
+      if (front.isClaimed) continue;
+
+      const neighbors = front.generateNeighborTerms();
+    }
+  }
 }
 
+function generateFixedIndicies(numOfTerms) {
+  const fixedIndiciesList = generateMasks(numOfTerms).map(mask => {
+    const indicies = range(numOfTerms);
+    mask.forEach((bool, idx) => {
+      if (!bool) indicies[idx] = -1;
+    });
+    return indicies;
+  });
+  return fixedIndiciesList;
+}
 
-
-console.log(new Minterm('0000').generateNeighborTerms( [0, 2, 3]));
+console.dir(new MintermList(3, [1, 2, 3, 4]), {depth: 100})
+generateFixedIndicies(3);

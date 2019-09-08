@@ -136,6 +136,12 @@ class MintermList {
     this.minterms.push(minterm);
   }
 
+  addMinterms(minterms) {
+    for (const minterm of minterms) {
+      this.addMinterm(minterm);
+    }
+  }
+
   getMintermWithNumber(targetDecimalMinterm) {;
     for (const minterm of this.minterms) {
       if (minterm.getDecimal() === targetDecimalMinterm) return minterm;
@@ -155,24 +161,28 @@ class MintermList {
 
       for (const fixedIndicies of fixedIndiciesList) {
         const neighbors = front.getNeighborTerms(fixedIndicies);
-        if (!this.containsMinterms(neighbors)) continue;
-
-        visitedMinterms.addMinterm(front);
-        neighbors.forEach(neighbor => {
-          if (this.getMintermWithNumber(neighbor.getDecimal()).isDontCare) {
-            neighbor.isDontCare = true;
-          }
-          visitedMinterms.addMinterm(neighbor);
-        });
-        groups.push([front,...neighbors]);
-        break;
+        if (this.containsMinterms(neighbors)) {
+          this.__updateOtherMintermsDontCarenessWithThisList(neighbors);
+          const currentGroup = [front, ...neighbors];
+          visitedMinterms.addMinterms(currentGroup);
+          groups.push(currentGroup);
+          break;
+        }
       }
     }
-
     return groups;
+  }
+
+  __updateOtherMintermsDontCarenessWithThisList(otherMinterms) {
+    otherMinterms.forEach(otherMinterm => {
+      const thisListEquivalent = this.getMintermWithNumber(otherMinterm.getDecimal());
+      if (thisListEquivalent !== null && thisListEquivalent.isDontCare) {
+        otherMinterm.isDontCare = true;
+      }
+    })
   }
 }
 
 
-const test = new MintermList(3, [2, 4, 6], [0]).getGroups();
+const test = new MintermList(3, [0, 2, 4, 5], [6]).getGroups();
 console.dir(test, {depth: 100});

@@ -40,7 +40,7 @@ function generateMasks(numOfTerms, fixedIndicies = []) {
 
 
 class Minterm {
-  constructor(minterm = '') {
+  constructor(minterm = '', isDontCare = false) {
     if (typeof minterm === 'string') {
       this.terms = convertBinaryStrToBoolArr(minterm);
     } else if (typeof minterm === 'number') {
@@ -48,6 +48,7 @@ class Minterm {
     } else {
       this.terms = minterm;
     }
+    this.isDontCare = isDontCare;
   }
 
   getTerm(index) {
@@ -91,12 +92,17 @@ class Minterm {
 
 
 class MintermList {
-  constructor(numOfVariables = 1, baseTenMinterms = []) {
+  constructor(numOfVariables = 1, baseTenMinterms = [], baseTenDontCares = []) {
     this.numOfVariables = numOfVariables;
-    let mintermStrings = baseTenMinterms
+    const minterms = baseTenMinterms
       .map(term => convertToBinaryString(term, numOfVariables))
-      .filter(term => term.length <= numOfVariables);
-    this.minterms = mintermStrings.map(term => new Minterm(term));
+      .filter(term => term.length <= numOfVariables)
+      .map(term => new Minterm(term));
+    const dontCares = baseTenDontCares
+      .map(term => convertToBinaryString(term, numOfVariables))
+      .filter(term => term.length <= numOfVariables)
+      .map(term => new Minterm(term, true));
+    this.minterms = [...minterms, ...dontCares];
   }
 
   containsMinterm(targetMinterm) {
@@ -117,27 +123,34 @@ class MintermList {
     this.minterms.push(minterm);
   }
 
+  getMintermWithNumber(targetDecimalMinterm) {;
+    for (const minterm of this.minterms) {
+      if (minterm.getDecimal() === targetDecimalMinterm) return minterm;
+    }
+    return null;
+  }
+
   generateGroups() {
     const mintermQueue = [...this.minterms];
     const groups = [];
-
     const fixedIndiciesList = generateFixedIndicies(this.numOfVariables);
     const visitedMinterms = new MintermList(this.numOfVariables);
 
     while (mintermQueue.length > 0) {
       const front = mintermQueue.shift();
-      console.log('front:', front);
-      console.dir(visitedMinterms, {depth: 100});
-      if (visitedMinterms.containsMinterm(front)) continue;
-      console.log('passed qc');
-
+      if (front.isDontCare || visitedMinterms.containsMinterm(front)) continue;
 
       for (const fixedIndicies of fixedIndiciesList) {
         const neighbors = front.generateNeighborTerms(fixedIndicies);
         if (!this.containsMinterms(neighbors)) continue;
 
         visitedMinterms.addMinterm(front);
-        neighbors.forEach(neighbor => visitedMinterms.addMinterm(neighbor));
+        neighbors.forEach(neighbor => {
+          if (this.getMintermWithNumber(neighbor.getDecimal()).isDontCare) {
+            neighbor.isDontCare = true;
+          }
+          visitedMinterms.addMinterm(neighbor);
+        });
         groups.push([front,...neighbors]);
         break;
       }
@@ -160,7 +173,7 @@ function generateFixedIndicies(numOfTerms) {
   return [allFixed, ...fixedIndiciesList];
 }
 
-const test = new MintermList(3, [0, 1, 3, 6]).generateGroups();
+const test = new MintermList(3, [2, 4, 6], [0]).generateGroups();
 console.log(' ');
 console.log(' ');
 console.log(' ');

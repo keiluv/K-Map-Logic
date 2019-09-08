@@ -38,6 +38,19 @@ function generateMasks(numOfTerms, fixedIndicies = []) {
   return masks;
 }
 
+function generateFixedIndicies(numOfTerms) {
+  const fixedIndiciesList = generateMasks(numOfTerms)
+    .map(mask => {
+      const indicies = range(numOfTerms);
+      mask.forEach((bool, idx) => {
+        if (!bool) indicies[idx] = -1;
+      });
+      return indicies;
+    });
+  const allFixed = [];
+  return [allFixed, ...fixedIndiciesList];
+}
+
 
 class Minterm {
   constructor(minterm = '', isDontCare = false) {
@@ -66,7 +79,7 @@ class Minterm {
     return parseInt(this.getBinaryString(), 2);
   }
 
-  generateNeighborTerms(fixedIndicies = []) {
+  getNeighborTerms(fixedIndicies = []) {
     const filteredFixedIndicies = fixedIndicies.filter(x => x >= 0 && x < this.terms.length);
     filteredFixedIndicies.sort();
   
@@ -130,7 +143,7 @@ class MintermList {
     return null;
   }
 
-  generateGroups() {
+  getGroups() {
     const mintermQueue = [...this.minterms];
     const groups = [];
     const fixedIndiciesList = generateFixedIndicies(this.numOfVariables);
@@ -141,7 +154,7 @@ class MintermList {
       if (front.isDontCare || visitedMinterms.containsMinterm(front)) continue;
 
       for (const fixedIndicies of fixedIndiciesList) {
-        const neighbors = front.generateNeighborTerms(fixedIndicies);
+        const neighbors = front.getNeighborTerms(fixedIndicies);
         if (!this.containsMinterms(neighbors)) continue;
 
         visitedMinterms.addMinterm(front);
@@ -160,24 +173,6 @@ class MintermList {
   }
 }
 
-function generateFixedIndicies(numOfTerms) {
-  const fixedIndiciesList = generateMasks(numOfTerms)
-    .map(mask => {
-      const indicies = range(numOfTerms);
-      mask.forEach((bool, idx) => {
-        if (!bool) indicies[idx] = -1;
-      });
-      return indicies;
-    });
-  const allFixed = [];
-  return [allFixed, ...fixedIndiciesList];
-}
 
-const test = new MintermList(3, [2, 4, 6], [0]).generateGroups();
-console.log(' ');
-console.log(' ');
-console.log(' ');
+const test = new MintermList(3, [2, 4, 6], [0]).getGroups();
 console.dir(test, {depth: 100});
-
-console.log(new Minterm(3).getBinaryString());
-console.log(new Minterm(3).getDecimal());

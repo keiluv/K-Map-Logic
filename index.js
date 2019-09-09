@@ -45,7 +45,7 @@ function generateFixedIndicies(numOfTerms) {
       mask.forEach((bool, idx) => {
         if (!bool) indicies[idx] = -1;
       });
-      return indicies;
+      return indicies.filter(x => x !== -1);
     });
   const allFixed = [];
   return [allFixed, ...fixedIndiciesList];
@@ -92,6 +92,10 @@ class Minterm {
       .map(neighbor => new Minterm(neighbor));
 
     return neighbors;
+  }
+
+  getSize() {
+    return this.terms.length;
   }
 
   equals(other) {
@@ -165,11 +169,12 @@ class MintermList {
           this.__updateOtherMintermsDontCarenessWithThisList(neighbors);
           const currentGroup = [front, ...neighbors];
           visitedMinterms.addMinterms(currentGroup);
-          groups.push(currentGroup);
+          groups.push(new KMapGroup(currentGroup, fixedIndicies));
           break;
         }
       }
     }
+    groups.sort((a, b) => a.groupSize < b.groupSize );
     return groups;
   }
 
@@ -183,6 +188,42 @@ class MintermList {
   }
 }
 
+class KMapGroup {
+  constructor(minterms, fixedIndicies) {
+    this.minterms = minterms;
+    this.fixedIndicies = fixedIndicies;
+    this.groupSize = minterms.length;
+    this.mintermSize = this.groupSize === 0 ? 0 : minterms[0].getSize();
+    this.outputTermRaw = this.getOutputTermRaw();
+    this.outputTerm = this.getOutputTerm();
+  }
 
-const test = new MintermList(3, [0, 2, 4, 5], [6]).getGroups();
+  getOutputTermRaw(variable) {
+    if (this.groupSize === 0) return null;
+    const outputTerm = (new Array(this.mintermSize)).fill(-1);
+    this.fixedIndicies.forEach(fixedIndex => {
+      outputTerm[fixedIndex] = (this.minterms[0].getTerm(fixedIndex) === true) ? 1 : 0;
+    })
+    return outputTerm;
+  }
+
+  getOutputTerm(variableNames = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    return this.outputTermRaw
+      .map((rawValue, idx) => {
+        if (rawValue === -1) return null;
+        let outputVariable = variableNames[idx];
+        if (outputVariable == null) outputVariable = '(N/A)';
+        if (rawValue === 1) return outputVariable;
+        return outputVariable + '\'';
+      })
+      .filter(x => x !== null)
+      .join('');
+  }
+}
+
+
+const test = new MintermList(6, [0, 2, 4, 13, 15, 8, 10, 16, 20, 23, 18, 24, 26, 32, 34, 45, 47, 40, 41, 42, 48, 50, 60, 61, 56, 57, 58]).getGroups();
+// const test = new MintermList(3, [0, 1, 2, 3]).getGroups();
 console.dir(test, {depth: 100});
+
+// console.dir(new MintermList(3, [4, 5, 6, 7]).getGroups(), {depth: 100});

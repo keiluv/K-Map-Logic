@@ -11,6 +11,7 @@ class KMapGroup {
   }
 
   getOutputTermRaw(variable) {
+    if (this.outputTermRaw != null) return this.outputTermRaw;
     if (this.groupSize === 0) return null;
     const outputTerm = (new Array(this.mintermSize)).fill(-1);
     this.fixedIndicies.forEach(fixedIndex => {
@@ -20,6 +21,7 @@ class KMapGroup {
   }
 
   getOutputTerm(variableNames = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    if (this.outputTerm != null) return this.outputTerm;
     return this.outputTermRaw
       .map((rawValue, idx) => {
         if (rawValue === -1) return null;

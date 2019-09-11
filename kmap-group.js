@@ -22,6 +22,7 @@ class KMapGroup {
 
   getOutputTerm(variableNames = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
     if (this.outputTerm != null) return this.outputTerm;
+    if (this.outputTermRaw.every(term => term === -1)) return 'True';
     return this.outputTermRaw
       .map((rawValue, idx) => {
         if (rawValue === -1) return null;

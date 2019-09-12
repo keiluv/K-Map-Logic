@@ -1,5 +1,14 @@
 'use strict';
 
+function convertMintermArraysToDecimalArray(minterms) {
+  return minterms
+    .map(minterm => {
+      const binaryRepresentation = minterm.terms.map(term => term ? '1' 
+: '0').join('');
+      return parseInt(binaryRepresentation, 2);
+  })
+}
+
 class KMapGroup {
   constructor(minterms, fixedIndicies, variableNames) {
     this.minterms = minterms;
@@ -8,6 +17,8 @@ class KMapGroup {
     this.mintermSize = this.groupSize === 0 ? 0 : minterms[0].getSize();
     this.outputTermRaw = this.getOutputTermRaw();
     this.outputTerm = this.getOutputTerm(variableNames);
+    this.decimalRepresentation = convertMintermArraysToDecimalArray(minterms)
+      .sort((a, b) => a > b);
   }
 
   getOutputTermRaw(variable) {

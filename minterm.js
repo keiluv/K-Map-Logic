@@ -8,7 +8,7 @@ class Minterm {
     if (typeof minterm === 'string') {
       this.terms = Util.convertBinaryStrToBoolArr(minterm);
     } else if (typeof minterm === 'number') {
-      this.terms = Util.convertBinaryStrToBoolArr(convertToBinaryString(minterm));
+      this.terms = Util.convertBinaryStrToBoolArr(Util.convertToBinaryString(minterm));
     } else {
       this.terms = minterm;
     }

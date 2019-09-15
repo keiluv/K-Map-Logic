@@ -22,9 +22,9 @@ class MintermList {
   containsMinterm(targetMinterm, ignoreDontCares = false) {
     for (const minterm of this.minterms) {
       if (ignoreDontCares) {
-        if (minterm.equals(targetMinterm)) return true;
-      } else {
         if (minterm.equals(targetMinterm) && !minterm.isDontCare) return true;
+      } else {
+        if (minterm.equals(targetMinterm)) return true;
       }
     }
     return false;
@@ -85,6 +85,8 @@ class MintermList {
       // if they only cover other true minterms or dont cares
       for (const fixedIndicies of fixedIndiciesList) {
         const neighbors = front.getNeighborTerms(fixedIndicies);
+        console.log(fixedIndicies)
+        console.log([front, ...neighbors]);
         if (!this.containsMinterms(neighbors)) continue;
 
         this.__updateOtherMintermsDontCarenessWithThisList(neighbors);
@@ -92,13 +94,15 @@ class MintermList {
 
         if (largestGroupSize != null && currentGroup.length < largestGroupSize) break;
         largestGroupSize = currentGroup.length;
-        let numOfMatches = visitedMinterms.getNumberOfMatchingMinterms(currentGroup, true);
+        let numOfMatches = visitedMinterms.getNumberOfMatchingMinterms(currentGroup, false);
         let numOfUnvisitedTargetMintermsInGroup = currentGroup.length - numOfMatches;
-        possibleGroupings.push({group: currentGroup, numOfUnvisitedTargetMintermsInGroup, fixedIndicies});
+        possibleGroupings.push({group: currentGroup, numOfUnvisited: numOfUnvisitedTargetMintermsInGroup, fixedIndicies});
       }
 
+      console.dir(possibleGroupings, {depth: 100});
+
       // Only choose the possible grouping that has the most unvisited minterms
-      possibleGroupings.sort((a, b) => a.numOfUnvisitedTargetMintermsInGroup < b.numOfUnvisitedTargetMintermsInGroup);
+      possibleGroupings.sort((a, b) => a.numOfUnvisited < b.numOfUnvisited);
       if (possibleGroupings[0] != null) {
         visitedMinterms.addMinterms(possibleGroupings[0].group);
         groups.push(new KMapGroup(possibleGroupings[0].group, possibleGroupings[0].fixedIndicies));

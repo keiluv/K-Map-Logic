@@ -49,7 +49,7 @@ const Util = {
         return indicies.filter(x => x !== -1);
       });
     const allFixed = [];
-    return [allFixed, ...fixedIndiciesList];
+    return [allFixed, ...fixedIndiciesList].sort((a, b) => a.length > b.length);
   },
 };
 

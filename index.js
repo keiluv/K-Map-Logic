@@ -1,9 +1,19 @@
 'use strict';
 
-const MintermList = require('./minterm-list');
+const MintermList = require('./minterm-list')
 
+const a = new MintermList(3, [0, 1, 2, 5, 6, 7]).getGroups()
+const b = new MintermList(4, [0, 1, 2, 3, 4, 5, 6, 7], [12, 13, 8, 9]).getGroups()
+const c = new MintermList(3, [0, 1, 3, 2, 5, 7]).getGroups()
 
-const test = new MintermList(6, [0, 2, 4, 13, 15, 8, 10, 16, 20, 23, 18, 24, 26, 32, 34, 45, 47, 40, 41, 42, 48, 50, 60, 61, 56, 57, 58]).getGroups();
-console.dir(test, {depth: 100});
+console.log()
 
-console.dir(new MintermList(3, [0, 1, 2, 3, 4, 5, 6, 7]).getGroups(), {depth: 100});
+console.dir(a, {depth: 100})
+
+console.log()
+
+console.dir(b, {depth: 100})
+
+console.log()
+
+console.dir(c, {depth: 100})

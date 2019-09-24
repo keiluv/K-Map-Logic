@@ -51,6 +51,14 @@ const Util = {
     const allFixed = [];
     return [allFixed, ...fixedIndiciesList].sort((a, b) => a.length > b.length);
   },
+
+  filterOnlySubarrayOfSmallestLength(arr = []) {
+    let lengthOfSmallest = Number.MAX_VALUE;
+    for (let subarray of arr) {
+      if (subarray.length < lengthOfSmallest) lengthOfSmallest = subarray.length;
+    }
+    return arr.filter(subarray => subarray.length === lengthOfSmallest);
+  }
 };
 
 module.exports = Util;

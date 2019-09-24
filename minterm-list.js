@@ -3,7 +3,7 @@
 const Util = require('./util');
 const Minterm = require('./minterm');
 const KMapGroup = require('./kmap-group');
-
+const GroupingTree = require('./grouping-tree');
 
 class MintermList {
   constructor(numOfVariables = 1, baseTenMinterms = [], baseTenDontCares = []) {
@@ -17,12 +17,13 @@ class MintermList {
       .filter(term => term.length <= numOfVariables)
       .map(term => new Minterm(term, true));
     this.minterms = [...minterms, ...dontCares];
+    this.dontCares = dontCares;
   }
 
   containsMinterm(targetMinterm, ignoreDontCares = false) {
     for (const minterm of this.minterms) {
       if (ignoreDontCares) {
-        if (minterm.equals(targetMinterm) && !minterm.isDontCare) return true;
+        if (minterm.equals(targetMinterm) && !targetMinterm.isDontCare) return true;
       } else {
         if (minterm.equals(targetMinterm)) return true;
       }
@@ -64,54 +65,82 @@ class MintermList {
     return numOfMatches;
   }
 
-  getGroups() {
-    const mintermQueue = [...this.minterms];
-    const groups = [];
+  // For a true minterm, go through all possible groups and add to possible groupings list
+  // if they only cover other true minterms or dont cares
+  __getPossibleGroupingsOfLargestSize(front, visitedMinterms) {
+    let largestGroupSize = null;
+    const possibleGroupings = [];
     const fixedIndiciesList = Util.generateFixedIndicies(this.numOfVariables);
-    const visitedMinterms = new MintermList(this.numOfVariables);
+    for (const fixedIndicies of fixedIndiciesList) {
+      const neighbors = front.getNeighborTerms(fixedIndicies);
+      if (!this.containsMinterms(neighbors)) continue;
 
-    // Puts each non-dontcare minterm in a queue and generates all possible groupings for it
-    // If the possible grouping contains only true minterms or dont cares, 
-    // it is added to a list of all possible grouping. Only the group that covers
-    // the most unvisited minterms is then added to the final groups list
-    while (mintermQueue.length > 0) {
-      const front = mintermQueue.shift();
-      if (front.isDontCare || visitedMinterms.containsMinterm(front)) continue;
+      this.__updateOtherMintermsDontCarenessWithThisList(neighbors);
+      const currentGroup = [front, ...neighbors];
 
-      const possibleGroupings = [];
-      let largestGroupSize = null;
-
-      // For a true minterm, go through all possible groups and add to possible groupings list
-      // if they only cover other true minterms or dont cares
-      for (const fixedIndicies of fixedIndiciesList) {
-        const neighbors = front.getNeighborTerms(fixedIndicies);
-        console.log(fixedIndicies)
-        console.log([front, ...neighbors]);
-        if (!this.containsMinterms(neighbors)) continue;
-
-        this.__updateOtherMintermsDontCarenessWithThisList(neighbors);
-        const currentGroup = [front, ...neighbors];
-
-        if (largestGroupSize != null && currentGroup.length < largestGroupSize) break;
-        largestGroupSize = currentGroup.length;
-        let numOfMatches = visitedMinterms.getNumberOfMatchingMinterms(currentGroup, false);
-        let numOfUnvisitedTargetMintermsInGroup = currentGroup.length - numOfMatches;
-        possibleGroupings.push({group: currentGroup, numOfUnvisited: numOfUnvisitedTargetMintermsInGroup, fixedIndicies});
-      }
-
-      console.dir(possibleGroupings, {depth: 100});
-
-      // Only choose the possible grouping that has the most unvisited minterms
-      possibleGroupings.sort((a, b) => a.numOfUnvisited < b.numOfUnvisited);
-      if (possibleGroupings[0] != null) {
-        visitedMinterms.addMinterms(possibleGroupings[0].group);
-        groups.push(new KMapGroup(possibleGroupings[0].group, possibleGroupings[0].fixedIndicies));
-      }
+      if (largestGroupSize != null && currentGroup.length < largestGroupSize) break;
+      largestGroupSize = currentGroup.length;
+      let numOfMatches = visitedMinterms.getNumberOfMatchingMinterms(currentGroup);
+      let numOfUnvisitedTargetMintermsInGroup = currentGroup.length - numOfMatches;
+      possibleGroupings.push({group: currentGroup, numOfUnvisited: numOfUnvisitedTargetMintermsInGroup, fixedIndicies});
     }
-
-    groups.sort((a, b) => a.groupSize < b.groupSize);
-    return groups;
+    return possibleGroupings;
   }
+
+  // Only choose the possible grouping that has the most unvisited minterms
+  __getPossibleGroupingsWithMostUnvisitedMinterms(front, visitedMinterms) {
+    let possibleGroupings = this.__getPossibleGroupingsOfLargestSize(front, visitedMinterms);
+    possibleGroupings.sort((a, b) => a.numOfUnvisited < b.numOfUnvisited);
+    possibleGroupings = possibleGroupings.filter(group => group.numOfUnvisited === possibleGroupings[0].numOfUnvisited);
+    // console.dir(possibleGroupings, {depth: 100});
+    return possibleGroupings;
+  }
+
+  getGroups() {
+    const visitedMinterms = new MintermList(this.numOfVariables);
+    visitedMinterms.addMinterms(this.dontCares);
+    const mintermQueue = [...this.minterms];
+    const groupingTree = new GroupingTree(visitedMinterms, mintermQueue);
+    const allSolutions = [];
+
+    while (groupingTree.getCurrent() != null) {
+
+      const { 
+        mintermQueue: currentMintermQueue,
+        visitedMinterms: currentVisitedMinterms,
+        groups: currentGroups,
+      } = groupingTree.getCurrent();
+
+      const front = currentMintermQueue[0];
+      if (front == null) {
+        groupingTree.moveCurrentToNextActiveChild();
+        allSolutions.push(currentGroups.map(group => new KMapGroup(group.group, group.fixedIndicies)));
+        continue;
+      } else if (front.isDontCare || currentVisitedMinterms.containsMinterm(front)) {
+        const shiftedQueue = currentMintermQueue.slice(1);
+        groupingTree.getCurrent().mintermQueue = shiftedQueue;
+        continue;
+      }
+
+      const possibleGroupings = this.__getPossibleGroupingsWithMostUnvisitedMinterms(front, currentVisitedMinterms);
+
+      if (possibleGroupings.length !== 0) {
+        for (const possibleGrouping of possibleGroupings) {
+          const visitedMintermsCopy = currentVisitedMinterms.createCopy();
+          visitedMintermsCopy.addMinterms(possibleGrouping.group);
+          const groupsCopy = [...currentGroups, possibleGrouping];
+          const mintermQueueCopy = currentMintermQueue.slice(1);
+          groupingTree.addChildToCurrent(visitedMintermsCopy, mintermQueueCopy, groupsCopy);
+        }
+      } else {
+        allSolutions.push(currentGroups.map(group => new KMapGroup(group.group, group.fixedIndicies)));
+      }
+
+      groupingTree.moveCurrentToNextActiveChild();
+    }
+    return Util.filterOnlySubarrayOfSmallestLength(allSolutions);
+  }
+
 
   __updateOtherMintermsDontCarenessWithThisList(otherMinterms) {
     otherMinterms.forEach(otherMinterm => {
@@ -119,7 +148,14 @@ class MintermList {
       if (thisListEquivalent !== null && thisListEquivalent.isDontCare) {
         otherMinterm.isDontCare = true;
       }
-    })
+    });
+  }
+
+  createCopy() {
+    const copy = new MintermList(this.numOfVariables);
+    copy.minterms = this.minterms.slice();
+    copy.dontCares = this.dontCares.slice();
+    return copy;
   }
 }
 

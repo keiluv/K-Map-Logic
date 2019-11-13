@@ -92,7 +92,6 @@ class MintermList {
     let possibleGroupings = this.__getPossibleGroupingsOfLargestSize(front, visitedMinterms);
     possibleGroupings.sort((a, b) => a.numOfUnvisited < b.numOfUnvisited);
     possibleGroupings = possibleGroupings.filter(group => group.numOfUnvisited === possibleGroupings[0].numOfUnvisited);
-    // console.dir(possibleGroupings, {depth: 100});
     return possibleGroupings;
   }
 
@@ -138,9 +137,11 @@ class MintermList {
 
       groupingTree.moveCurrentToNextActiveChild();
     }
-    return Util.filterOnlySubarrayOfSmallestLength(allSolutions);
+    const filteredSolutions = Util.filterOnlySubarrayOfSmallestLength(allSolutions).map(grouping => {
+      return grouping.sort((a, b) => a.groupSize < b.groupSize)
+    });
+    return filteredSolutions;
   }
-
 
   __updateOtherMintermsDontCarenessWithThisList(otherMinterms) {
     otherMinterms.forEach(otherMinterm => {

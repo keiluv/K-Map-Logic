@@ -2,7 +2,6 @@
 
 const Util = require('./util');
 
-
 class Minterm {
   constructor(minterm = '', isDontCare = false) {
     if (typeof minterm === 'string') {

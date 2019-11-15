@@ -2,15 +2,22 @@
 
 const Util = require('./util');
 
+/** 
+ * Stores a minterm as a boolean array 
+ * Accepts a boolean string, decimal number, or array directly 
+ * [true, true, false, true] for '1101' or 13 
+ */
 class Minterm {
   constructor(minterm = '', isDontCare = false) {
-    if (typeof minterm === 'string') {
-      this.terms = Util.convertBinaryStrToBoolArr(minterm);
-    } else if (typeof minterm === 'number') {
-      this.terms = Util.convertBinaryStrToBoolArr(Util.convertToBinaryString(minterm));
-    } else {
-      this.terms = minterm;
-    }
+    this.terms = (() => {
+      if (typeof minterm === 'string') {
+        return Util.convertBinaryStrToBoolArr(minterm);
+      }
+      if (typeof minterm === 'number') {
+        return Util.convertBinaryStrToBoolArr(Util.convertToBinaryString(minterm));
+      }
+      return minterm;
+    })();
     this.isDontCare = isDontCare;
   }
 
@@ -29,6 +36,11 @@ class Minterm {
     return parseInt(this.getBinaryString(), 2);
   }
 
+  /** 
+   * Returns list of all neighboring minterm objects the share the same binary value
+   * at fixedIndicies. For example, the neighbours of 1101 with fixedIndicies=[0, 1]
+   * would be 1100, 1111, and 1110 
+   */
   getNeighborTerms(fixedIndicies = []) {
     const filteredFixedIndicies = fixedIndicies.filter(x => x >= 0 && x < this.terms.length);
     filteredFixedIndicies.sort();
@@ -48,6 +60,10 @@ class Minterm {
     return this.terms.length;
   }
 
+  /**
+   * Checks minterm equality by comparing terms 
+   * Note that this ignores the dontcareness in the comparison 
+   */
   equals(other) {
     if (this.terms.length !== other.terms.length) return false;
     for (let i = 0; i < this.terms.length; i++) {

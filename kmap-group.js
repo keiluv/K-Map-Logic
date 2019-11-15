@@ -8,6 +8,12 @@ function convertMintermArraysToDecimalArray(minterms) {
   })
 }
 
+/**
+ * Container class for one group.
+ * Minterms is an array of minterms inside the group.
+ * fixedIndicies is an array of which indicies all elements in group share the same binary value
+ * variableNames is a string of possible names that will be tokenized into individual characters
+ */
 class KMapGroup {
   constructor(minterms, fixedIndicies, variableNames) {
     this.minterms = minterms;

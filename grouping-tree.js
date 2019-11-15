@@ -11,6 +11,12 @@ class GroupingTreeNode {
   }
 }
 
+/**
+ * The GroupingTree holds the state of each step in the solving algorithm
+ * The tree only expands (no removal functions) and has a "current" reference
+ * which moves from child node to child node. If the current node has no more
+ * children, it will move to the parent and try and find the next child node.
+ */
 class GroupingTree {
   constructor(visitedMinterms = [], mintermQueue = [], groups = []) {
     this.root = new GroupingTreeNode(visitedMinterms, mintermQueue, groups);

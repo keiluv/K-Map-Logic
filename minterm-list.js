@@ -5,6 +5,11 @@ const Minterm = require('./minterm');
 const KMapGroup = require('./kmap-group');
 const GroupingTree = require('./grouping-tree');
 
+/**
+ * Container class for minterms
+ * Allows checks for existance and adding functions
+ * Also generates kmap solutions using minterms in the list
+ */
 class MintermList {
   constructor(numOfVariables = 1, baseTenMinterms = [], baseTenDontCares = []) {
     this.numOfVariables = numOfVariables;
@@ -67,8 +72,10 @@ class MintermList {
     return numOfMatches;
   }
 
-  // For a true minterm, go through all possible groups and add to possible groupings list
-  // if they only cover other true minterms or dont cares
+  /** 
+   * For a true minterm, go through all possible groups and add to possible groupings list
+   * if they only cover other true minterms or dont cares.
+   */ 
   __getPossibleGroupingsOfLargestSize(front, visitedMinterms) {
     let largestGroupSize = null;
     const possibleGroupings = [];
@@ -89,7 +96,10 @@ class MintermList {
     return possibleGroupings;
   }
 
-  // Only choose the possible grouping that has the most unvisited minterms
+  /**
+   * Looks through all possible groupings for a specific minterm, and chooses
+   * the one that covers the most unvisited minterms.
+   */
   __getPossibleGroupingsWithMostUnvisitedMinterms(front, visitedMinterms) {
     let possibleGroupings = this.__getPossibleGroupingsOfLargestSize(front, visitedMinterms);
     possibleGroupings.sort((a, b) => a.numOfUnvisited < b.numOfUnvisited);
@@ -97,6 +107,11 @@ class MintermList {
     return possibleGroupings;
   }
 
+  /** 
+   * The crux of the minterm-list class. 
+   * Gets all possible groupings (Groupings refer to one solution, containing groups)
+   * The result is an array of groupings, where each grouping is an array of kmapGroups 
+   */
   getGroups() {
     const visitedMinterms = new MintermList(this.numOfVariables);
     visitedMinterms.addMinterms(this.dontCares);
@@ -112,6 +127,10 @@ class MintermList {
         groups: currentGroups,
       } = groupingTree.getCurrent();
 
+      /* Checks front of minterm queue.
+       * If the queue is empty, adds final solution to list and exits loop
+       * If the front is already visited or a don't-care, skip the minterm
+       * Otherwise it will perform more groupings and expand the tree */
       const front = currentMintermQueue[0];
       if (front == null) {
         groupingTree.moveCurrentToNextActiveChild();
@@ -123,8 +142,10 @@ class MintermList {
         continue;
       }
 
+      /* Checks for all possible groups that include the current minterm 
+       * If there are any, adds a child to the tree node but with an updated state
+       * If not, the add all groups of current node to solution list */
       const possibleGroupings = this.__getPossibleGroupingsWithMostUnvisitedMinterms(front, currentVisitedMinterms);
-
       if (possibleGroupings.length !== 0) {
         for (const possibleGrouping of possibleGroupings) {
           const visitedMintermsCopy = currentVisitedMinterms.createCopy();
@@ -136,7 +157,6 @@ class MintermList {
       } else {
         allSolutions.push(currentGroups.map(group => new KMapGroup(group.group, group.fixedIndicies)));
       }
-
       groupingTree.moveCurrentToNextActiveChild();
     }
     const filteredSolutions = Util.filterOnlySubarrayOfSmallestLength(allSolutions).map(grouping => {
@@ -145,11 +165,16 @@ class MintermList {
     return filteredSolutions;
   }
 
+  /**
+   * Takes an array of minterms and matches it's dontcare values using this list. 
+   */
   __updateOtherMintermsDontCarenessWithThisList(otherMinterms) {
     otherMinterms.forEach(otherMinterm => {
       const thisListEquivalent = this.getMintermUsingNumber(otherMinterm.getDecimal());
       if (thisListEquivalent !== null && thisListEquivalent.isDontCare) {
         otherMinterm.isDontCare = true;
+      } else {
+        otherMinterm.isDontCare = false;
       }
     });
   }

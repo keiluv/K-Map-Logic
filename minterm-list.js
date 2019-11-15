@@ -9,10 +9,12 @@ class MintermList {
   constructor(numOfVariables = 1, baseTenMinterms = [], baseTenDontCares = []) {
     this.numOfVariables = numOfVariables;
     const minterms = baseTenMinterms
+      .sort((a, b) => a > b)
       .map(term => Util.convertToBinaryString(term, numOfVariables))
       .filter(term => term.length <= numOfVariables)
       .map(term => new Minterm(term));
     const dontCares = baseTenDontCares
+      .sort((a, b) => a > b)
       .map(term => Util.convertToBinaryString(term, numOfVariables))
       .filter(term => term.length <= numOfVariables)
       .map(term => new Minterm(term, true));
